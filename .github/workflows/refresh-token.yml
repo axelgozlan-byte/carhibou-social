@@ -1,0 +1,24 @@
+name: Prolonger le jeton Instagram
+
+# Le jeton longue durée expire au bout de 60 jours ; on le prolonge chaque semaine.
+# Nécessite le secret GH_PAT (jeton GitHub fin, droit "Secrets: write" sur ce dépôt)
+# pour réenregistrer IG_TOKEN.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prolonger et réenregistrer le jeton
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          NEW=$(curl -fsS "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${IG_TOKEN}" | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+          echo "::add-mask::$NEW"
+          gh secret set IG_TOKEN --repo "$GITHUB_REPOSITORY" --body "$NEW"
+          echo "Jeton prolongé."

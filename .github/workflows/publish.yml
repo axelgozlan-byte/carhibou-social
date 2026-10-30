@@ -1,0 +1,36 @@
+name: Publier sur Instagram
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Simulation (ne publie rien)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publier les posts arrivés à échéance
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: python3 scripts/publish.py
+      - name: Enregistrer le suivi
+        if: always()
+        run: |
+          git config user.name "carhibou-bot"
+          git config user.email "bot@carhibou.com"
+          git add queue
+          git diff --cached --quiet || (git commit -m "Suivi des publications" && git push)
