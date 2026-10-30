@@ -29,7 +29,7 @@ jobs:
       - name: Publier les posts arrivés à échéance
         env:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
-          IG_USER_ID: ${{ vars.IG_USER_ID }}
+          IG_USER_ID: ${{ vars.IG_USER_ID || '17841447710065804' }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
           CHECK: ${{ inputs.check && '1' || '0' }}
         run: python3 scripts/publish.py
