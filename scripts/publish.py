@@ -104,6 +104,12 @@ def publish(post_dir, post, ig_id):
 
 def check():
     """Vérifie le jeton et le compte, sans rien publier."""
+    print(f"::notice::Type de jeton : {TOKEN[:4]}… ({len(TOKEN)} car.), API {API}")
+    for path, f in (("me", "id,name"), ("me/accounts", "id,name,instagram_business_account")):
+        try:
+            print(f"::notice::{path} -> {json.dumps(call('GET', path, fields=f))[:600]}")
+        except Exception as e:
+            print(f"::notice::{path} -> erreur {str(e)[:600]}")
     ig_id = os.environ.get("IG_USER_ID") or find_ig_id()
     info = call("GET", ig_id, fields="username,media_count")
     lim = call("GET", f"{ig_id}/content_publishing_limit", fields="quota_usage,config")
