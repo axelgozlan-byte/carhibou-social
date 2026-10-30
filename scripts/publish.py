@@ -102,7 +102,18 @@ def publish(post_dir, post, ig_id):
     return media_id, link
 
 
+def check():
+    """Vérifie le jeton et le compte, sans rien publier."""
+    ig_id = os.environ.get("IG_USER_ID") or find_ig_id()
+    info = call("GET", ig_id, fields="username,media_count")
+    lim = call("GET", f"{ig_id}/content_publishing_limit", fields="quota_usage,config")
+    print(f"OK : @{info.get('username')} (id {ig_id}), {info.get('media_count')} publications, quota {lim}")
+    return 0
+
+
 def main():
+    if os.environ.get("CHECK") == "1":
+        return check()
     now = datetime.now(timezone.utc)
     due = []
     for d in sorted(p for p in QUEUE.iterdir() if p.is_dir()):

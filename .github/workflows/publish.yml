@@ -9,6 +9,10 @@ on:
         description: "Simulation (ne publie rien)"
         type: boolean
         default: false
+      check:
+        description: "Vérifier la connexion au compte Instagram"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -27,6 +31,7 @@ jobs:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
           IG_USER_ID: ${{ vars.IG_USER_ID }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          CHECK: ${{ inputs.check && '1' || '0' }}
         run: python3 scripts/publish.py
       - name: Enregistrer le suivi
         if: always()
