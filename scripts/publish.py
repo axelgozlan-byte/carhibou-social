@@ -30,13 +30,13 @@ DRY = os.environ.get("DRY_RUN") == "1"
 
 
 def call(method, path, **params):
-    params["access_token"] = TOKEN
     data = urllib.parse.urlencode(params).encode()
     url = f"{API}/{path}"
+    headers = {"Authorization": f"Bearer {TOKEN}"}
     if method == "GET":
-        req = urllib.request.Request(url + "?" + data.decode())
+        req = urllib.request.Request(url + ("?" + data.decode() if params else ""), headers=headers)
     else:
-        req = urllib.request.Request(url, data=data, method="POST")
+        req = urllib.request.Request(url, data=data, method="POST", headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             return json.load(r)
@@ -107,7 +107,7 @@ def check():
     ig_id = os.environ.get("IG_USER_ID") or find_ig_id()
     info = call("GET", ig_id, fields="username,media_count")
     lim = call("GET", f"{ig_id}/content_publishing_limit", fields="quota_usage,config")
-    print(f"OK : @{info.get('username')} (id {ig_id}), {info.get('media_count')} publications, quota {lim}")
+    print(f"::notice::OK : @{info.get('username')} (id {ig_id}), {info.get('media_count')} publications, quota {lim}")
     return 0
 
 
@@ -147,9 +147,14 @@ def main():
         except Exception as e:  # on continue avec les autres posts
             failed += 1
             (d / "error.log").write_text(f"{datetime.now(timezone.utc).isoformat()} {e}\n")
-            print(f"ÉCHEC {d.name}: {e}", file=sys.stderr)
+            print(f"::error::ÉCHEC {d.name}: {str(e)[:800]}")
     return 1 if failed else 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as e:
+        msg = str(e).replace(TOKEN, "[jeton]") if TOKEN else str(e)
+        print(f"::error::{msg[:900]}")
+        sys.exit(1)
