@@ -7,4 +7,4 @@ File de publication Instagram de **carhibou.com**.
   via l'API officielle Instagram et écrit `published.json` (lien du post).
 - En cas d'échec, `error.log` est écrit dans le dossier du post.
 
-Secrets requis : `IG_TOKEN` (jeton Instagram), `GH_PAT` (pour prolonger le jeton chaque semaine).
+Secret requis : `IG_TOKEN` (jeton utilisateur système Meta, sans expiration). Variable optionnelle : `IG_USER_ID`.

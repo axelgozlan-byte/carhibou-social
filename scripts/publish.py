@@ -10,7 +10,8 @@ Chaque post = un dossier queue/<id>/ contenant :
 Une fois publié, le script écrit published.json dans le dossier.
 
 Variables d'environnement :
-  IG_TOKEN    jeton d'accès Instagram (API avec connexion Instagram)
+  IG_TOKEN    jeton utilisateur système Meta (connexion unifiée, n'expire pas)
+  IG_USER_ID  identifiant du compte Instagram professionnel (sinon détecté automatiquement)
   REPO        owner/repo (fourni par GitHub Actions)
   BRANCH      branche servant les images (défaut: main)
   DRY_RUN=1   n'appelle pas l'API, affiche seulement ce qui partirait
@@ -19,7 +20,7 @@ import json, os, sys, time, urllib.parse, urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-API = "https://graph.instagram.com/v21.0"
+API = os.environ.get("IG_API", "https://graph.facebook.com/v21.0")
 ROOT = Path(__file__).resolve().parent.parent
 QUEUE = ROOT / "queue"
 TOKEN = os.environ.get("IG_TOKEN", "")
@@ -53,6 +54,26 @@ def wait_ready(container_id, tries=20):
             raise RuntimeError(f"conteneur {container_id} en échec: {st}")
         time.sleep(5)
     raise RuntimeError(f"conteneur {container_id} pas prêt à temps")
+
+
+def find_ig_id():
+    """Cherche le compte Instagram relié au jeton (via les Pages ou le portefeuille)."""
+    try:
+        pages = call("GET", "me/accounts", fields="instagram_business_account").get("data", [])
+        for p in pages:
+            if p.get("instagram_business_account"):
+                return p["instagram_business_account"]["id"]
+    except RuntimeError:
+        pass
+    me = call("GET", "me", fields="id")
+    for edge in ("instagram_accounts", "owned_instagram_accounts"):
+        try:
+            data = call("GET", f"{me['id']}/{edge}", fields="id,username").get("data", [])
+            if data:
+                return data[0]["id"]
+        except RuntimeError:
+            continue
+    raise RuntimeError("Compte Instagram introuvable : renseigner la variable IG_USER_ID")
 
 
 def image_url(post_dir, name):
@@ -101,9 +122,9 @@ def main():
     if not TOKEN:
         print("IG_TOKEN manquant", file=sys.stderr)
         return 1
-    ig_id = call("GET", "me", fields="user_id,username")
-    print(f"Compte: @{ig_id.get('username')}")
-    ig_id = ig_id["user_id"]
+    ig_id = os.environ.get("IG_USER_ID") or find_ig_id()
+    info = call("GET", ig_id, fields="username")
+    print(f"Compte: @{info.get('username')}")
     failed = 0
     for d, post in due:
         try:

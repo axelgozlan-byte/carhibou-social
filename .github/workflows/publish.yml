@@ -25,6 +25,7 @@ jobs:
       - name: Publier les posts arrivés à échéance
         env:
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          IG_USER_ID: ${{ vars.IG_USER_ID }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
         run: python3 scripts/publish.py
       - name: Enregistrer le suivi
